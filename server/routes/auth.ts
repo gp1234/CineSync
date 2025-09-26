@@ -51,7 +51,14 @@ router.post("/login", async (req, res) => {
     data: { refreshToken },
   });
 
-  res.json({ accessToken, refreshToken });
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "none",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  res.json({ accessToken });
 
   return res.json({ message: "Login successful" });
 });
@@ -74,6 +81,7 @@ router.post("/register", async (req, res) => {
     const accessToken = generateAccessToken({
       userId: user.id,
       email: user.email,
+      role: user.role,
     });
     const refreshToken = generateRefreshToken({
       userId: user.id,
@@ -85,7 +93,14 @@ router.post("/register", async (req, res) => {
       data: { refreshToken },
     });
 
-    res.json({ accessToken, refreshToken });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "none",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.json({ accessToken });
   } catch (error) {
     res.status(400).json({ error: "User already exists" });
   }
@@ -93,8 +108,24 @@ router.post("/register", async (req, res) => {
   return res.json({ message: "Registration successful" });
 });
 
-router.post("/logout", (req, res) => {
-  return res.json({ message: "Logout successful" });
+router.post("/logout", async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken)
+    return res.status(400).json({ error: "Refresh token is required" });
+
+  try {
+    const user = await prisma.user.findFirst({ where: { refreshToken } });
+    if (!user) return res.status(400).json({ error: "Invalid refresh token" });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: null },
+    });
+
+    res.json({ message: "Logout successful" });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.post("/refresh-token", async (req, res) => {
@@ -105,7 +136,19 @@ router.post("/refresh-token", async (req, res) => {
   const user = await prisma.user.findFirst({
     where: { refreshToken },
   });
-  return res.json({ message: "Token refreshed" });
+  const accessToken = generateAccessToken({
+    userId: user?.id,
+    email: user?.email,
+  });
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "none",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  return res.json({ accessToken });
 });
 
 export default router;
