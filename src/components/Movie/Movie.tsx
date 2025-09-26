@@ -6,7 +6,7 @@ import {
   Button,
   IconButton,
 } from "@mui/material";
-import type { IMovie } from "../interfaces/Movie.ts";
+import type { IMovie } from "../../interfaces/Movie.ts";
 import { Favorite, Delete } from "@mui/icons-material";
 
 type IconEnum = "ADD" | "REMOVE";
