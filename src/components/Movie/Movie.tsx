@@ -53,7 +53,7 @@ export default function Movie({
         {icon == "REMOVE" && (
           <IconButton
             sx={{ ml: "auto" }}
-            aria-label="add to favorites"
+            aria-label="remove from favorites"
             onClick={() => cb(movie)}
           >
             <Delete color="warning" />

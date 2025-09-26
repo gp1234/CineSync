@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import Movie from "./Movie";
 
 const mockMovie = {
@@ -29,5 +29,17 @@ describe("Movie component", () => {
     render(<Movie cb={() => {}} movie={mockMovie} />);
     const element = screen.getByText("The Grudge");
     expect(element).toBeDefined();
+  });
+
+  it("calls callback function when favorite button is clicked", () => {
+    const mockCallback = vi.fn();
+
+    render(<Movie cb={mockCallback} movie={mockMovie} />);
+
+    const favoriteButton = screen.getByRole("button");
+    fireEvent.click(favoriteButton);
+
+    // Check if the callback was called with the movie object
+    expect(mockCallback).toHaveBeenCalledWith(mockMovie);
   });
 });

@@ -12,7 +12,7 @@ import {
 import { useDispatch } from "react-redux";
 
 import type { IMovie } from "../interfaces/Movie.ts";
-import Movie from "../components/Movie.tsx";
+import Movie from "../components/Movie/Movie.tsx";
 import { useSelector } from "react-redux";
 import type { IState } from "../store/index.ts";
 
