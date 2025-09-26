@@ -1,16 +1,95 @@
 import jwt from "jsonwebtoken";
-
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
 import { Router } from "express";
+import { authSchema } from "../validators/authSchema";
 
 const router = Router();
+const prisma = new PrismaClient();
 
-router.post("/login", (req, res) => {
-  const { username, password } = req.body;
+function generateAccessToken(payload: object) {
+  return jwt.sign(payload, process.env.JWT_SECRET as string, {
+    expiresIn: "1h",
+  });
+}
+
+function generateRefreshToken(payload: object) {
+  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET as string, {
+    expiresIn: "7d",
+  });
+}
+
+router.post("/login", async (req, res) => {
+  const parsed = authSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ errors: parsed.error.format() });
+  }
+
+  const { email, password } = parsed.data;
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+  if (!user)
+    return res.status(401).json({ error: "Invalid email or password" });
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    return res.status(401).json({ error: "Invalid email or password" });
+  }
+  const accessToken = generateAccessToken({
+    userId: user.id,
+    email: user.email,
+  });
+  const refreshToken = generateRefreshToken({
+    userId: user.id,
+    email: user.email,
+  });
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { refreshToken },
+  });
+
+  res.json({ accessToken, refreshToken });
 
   return res.json({ message: "Login successful" });
 });
 
-router.post("/register", (req, res) => {
+router.post("/register", async (req, res) => {
+  const parsed = authSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ errors: parsed.error.format() });
+  }
+  const { email, password } = parsed.data;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+      },
+    });
+
+    const accessToken = generateAccessToken({
+      userId: user.id,
+      email: user.email,
+    });
+    const refreshToken = generateRefreshToken({
+      userId: user.id,
+      email: user.email,
+    });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    res.json({ accessToken, refreshToken });
+  } catch (error) {
+    res.status(400).json({ error: "User already exists" });
+  }
+
   return res.json({ message: "Registration successful" });
 });
 
@@ -18,7 +97,14 @@ router.post("/logout", (req, res) => {
   return res.json({ message: "Logout successful" });
 });
 
-router.post("/refresh-token", (req, res) => {
+router.post("/refresh-token", async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ error: "Refresh token is required" });
+  }
+  const user = await prisma.user.findFirst({
+    where: { refreshToken },
+  });
   return res.json({ message: "Token refreshed" });
 });
 
