@@ -7,9 +7,19 @@ import {
   IconButton,
 } from "@mui/material";
 import type { IMovie } from "../interfaces/Movie.ts";
-import FavoriteIcon from "@mui/icons-material/Favorite";
+import { Favorite, Delete } from "@mui/icons-material";
 
-export default function Movie({ movie }: { movie: IMovie }) {
+type IconEnum = "ADD" | "REMOVE";
+
+export default function Movie({
+  movie,
+  cb,
+  icon = "ADD",
+}: {
+  movie: IMovie;
+  icon?: IconEnum;
+  cb: (movie: IMovie) => void;
+}) {
   const {
     title,
     year,
@@ -21,6 +31,7 @@ export default function Movie({ movie }: { movie: IMovie }) {
     thumbnail_width,
     thumbnail_height,
   } = movie;
+
   return (
     <Card variant="outlined" sx={{ minWidth: 200 }}>
       <CardContent>
@@ -30,9 +41,24 @@ export default function Movie({ movie }: { movie: IMovie }) {
         <Typography fontWeight="bold">{title}</Typography>
       </CardContent>
       <CardActions>
-        <IconButton sx={{ ml: "auto" }} aria-label="add to favorites">
-          <FavoriteIcon color="success" />
-        </IconButton>
+        {icon == "ADD" && (
+          <IconButton
+            sx={{ ml: "auto" }}
+            aria-label="add to favorites"
+            onClick={() => cb(movie)}
+          >
+            <Favorite color="success" />
+          </IconButton>
+        )}
+        {icon == "REMOVE" && (
+          <IconButton
+            sx={{ ml: "auto" }}
+            aria-label="add to favorites"
+            onClick={() => cb(movie)}
+          >
+            <Delete color="warning" />
+          </IconButton>
+        )}
       </CardActions>
     </Card>
   );

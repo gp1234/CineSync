@@ -9,8 +9,6 @@ import {
   Tabs,
   Tab,
 } from "@mui/material";
-import data from "./data/data.json"; // adjust the path as needed
-import type { IMovie } from "./interfaces/Movie.ts";
 import { useState } from "react";
 import MovieList from "./pages/MovieList.tsx";
 import FavoriteList from "./pages/FavoriteList.tsx";
