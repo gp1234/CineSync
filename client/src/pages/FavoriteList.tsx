@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { useSelector, useDispatch } from "react-redux";
 import type { IState } from "../store";
-import Movie from "../components/Movie";
+import Movie from "../components/Movie/Movie";
 import type { IMovie } from "../interfaces/Movie";
 
 export default function FavoriteList() {
